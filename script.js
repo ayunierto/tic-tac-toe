@@ -1,67 +1,131 @@
+// Cliente con Socket.IO — sincroniza estado con el servidor
 const cells = Array.from(document.querySelectorAll(".cell"));
 const status = document.getElementById("status");
 const resetBtn = document.getElementById("reset");
+const roomInput = document.getElementById("room");
+const createBtn = document.getElementById("create-room");
+const roomInfo = document.getElementById("room-info");
+const nameInput = document.getElementById("name");
+const passInput = document.getElementById("room-pass");
+const participantsEl = document.getElementById("participants");
 
+let symbol = null;
+let ready = false;
+let roomId = null;
 let board = Array(9).fill("");
-let current = "X";
-let active = true;
+let current = null;
 
-const wins = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-  [0, 4, 8],
-  [2, 4, 6],
-];
+const socket = io();
 
-function updateStatus() {
-  status.textContent = active ? `Turno: ${current}` : status.textContent;
-}
-
-function handleClick(e) {
-  const i = Number(e.target.dataset.index);
-  if (!active || board[i]) return;
-  board[i] = current;
-  e.target.textContent = current;
-  checkResult();
-}
-
-function checkResult() {
-  for (const combo of wins) {
-    const [a, b, c] = combo;
-    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      active = false;
-      status.textContent = `Gana: ${board[a]}`;
-      highlight(combo);
-      return;
-    }
-  }
-  if (board.every(Boolean)) {
-    active = false;
-    status.textContent = "Empate";
+createBtn.addEventListener("click", () => {
+  const id = (roomInput.value || "").trim();
+  const name = (nameInput.value || "").trim();
+  const password = (passInput.value || "").trim() || null;
+  if (!name) {
+    alert("Introduce un nombre");
     return;
   }
-  current = current === "X" ? "O" : "X";
-  updateStatus();
-}
+  if (!id) {
+    alert("Introduce el código de sala");
+    return;
+  }
+  socket.emit("join", { roomId: id, name, password });
+});
 
-function highlight(combo) {
-  combo.forEach((i) => cells[i].classList.add("win"));
-}
-
-function reset() {
-  board = Array(9).fill("");
-  current = "X";
-  active = true;
-  cells.forEach((c) => {
-    c.textContent = "";
+function renderBoard(b) {
+  board = b.slice();
+  cells.forEach((c, i) => {
+    c.textContent = board[i] || "";
     c.classList.remove("win");
   });
-  status.textContent = `Turno: ${current}`;
 }
 
-cells.forEach((c) => c.addEventListener("click", handleClick));
-resetBtn.addEventListener("click", reset);
+function setStatus(text) {
+  status.textContent = text;
+}
+
+socket.on("joined", (data) => {
+  roomId = data.roomId;
+  symbol = data.symbol;
+  ready = data.ready;
+  renderBoard(data.board);
+  current = data.current;
+  roomInfo.textContent = `Sala: ${roomId} — Eres: ${symbol}`;
+  // show game, hide lobby
+  document.getElementById("lobby").style.display = "none";
+  document.getElementById("game").style.display = "block";
+  if (data.players) renderParticipants(data.players);
+  setStatus(
+    ready
+      ? current === symbol
+        ? "Tu turno"
+        : "Turno rival"
+      : "Esperando jugador..."
+  );
+});
+
+socket.on("roomState", (data) => {
+  renderBoard(data.board);
+  current = data.current;
+  ready = data.ready;
+  if (!ready) setStatus("Esperando jugador...");
+  else setStatus(current === symbol ? "Tu turno" : "Turno rival");
+});
+
+socket.on("gameOver", (data) => {
+  renderBoard(data.board);
+  if (data.winCombo && data.winCombo.length === 3) {
+    data.winCombo.forEach((i) => cells[i].classList.add("win"));
+  }
+  if (data.winner) {
+    setStatus(data.winner === symbol ? "¡Has ganado!" : "Has perdido");
+  } else {
+    setStatus("Empate");
+  }
+});
+
+socket.on("playerLeft", (info) => {
+  setStatus("Rival desconectado — esperando...");
+  // request updated participants list isn't necessary, server emits participants on disconnect
+});
+
+socket.on("errorMessage", (msg) => {
+  alert(msg);
+  setStatus(msg);
+});
+
+socket.on("participants", (players) => {
+  renderParticipants(players);
+});
+
+function renderParticipants(players) {
+  participantsEl.innerHTML = "";
+  const ul = document.createElement("ul");
+  players.forEach((p) => {
+    const li = document.createElement("li");
+    li.textContent = `${p.name} — ${p.symbol}`;
+    ul.appendChild(li);
+  });
+  participantsEl.appendChild(ul);
+}
+
+cells.forEach((c) =>
+  c.addEventListener("click", (e) => {
+    const i = Number(e.target.dataset.index);
+    if (!ready) return;
+    if (current !== symbol) return;
+    if (board[i]) return;
+    socket.emit("move", { index: i });
+  })
+);
+
+resetBtn.addEventListener("click", () => {
+  if (!roomId) return resetLocal();
+  socket.emit("reset");
+});
+
+function resetLocal() {
+  board = Array(9).fill("");
+  renderBoard(board);
+  setStatus("Turno: X");
+}

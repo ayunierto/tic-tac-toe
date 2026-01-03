@@ -9,23 +9,53 @@
   <body>
     <main>
       <h1>Tic Tac Toe</h1>
-      <div id="board" class="board" aria-label="Tablero de Tic Tac Toe">
-        <div class="cell" data-index="0"></div>
-        <div class="cell" data-index="1"></div>
-        <div class="cell" data-index="2"></div>
-        <div class="cell" data-index="3"></div>
-        <div class="cell" data-index="4"></div>
-        <div class="cell" data-index="5"></div>
-        <div class="cell" data-index="6"></div>
-        <div class="cell" data-index="7"></div>
-        <div class="cell" data-index="8"></div>
-      </div>
 
-      <p id="status">Turno: X</p>
-      <div class="controls">
-        <button id="reset">Reiniciar</button>
-      </div>
+      <section id="lobby">
+        <p>
+          Entra a la sala con tu usuario, código de sala y contraseña
+          (opcional):
+        </p>
+        <div class="lobby-row">
+          <label>Usuario <input id="name" placeholder="Tu nombre" /></label>
+        </div>
+        <div class="lobby-row">
+          <label
+            >Código de sala <input id="room" placeholder="Código de sala"
+          /></label>
+        </div>
+        <div class="lobby-row">
+          <label
+            >Contraseña
+            <input id="room-pass" placeholder="Contraseña (opcional)"
+          /></label>
+        </div>
+        <div class="lobby-row">
+          <button id="create-room">Entrar</button>
+        </div>
+        <p id="room-info"></p>
+        <div id="participants" aria-live="polite"></div>
+      </section>
+
+      <section id="game" style="display: none">
+        <div id="board" class="board" aria-label="Tablero de Tic Tac Toe">
+          <div class="cell" data-index="0"></div>
+          <div class="cell" data-index="1"></div>
+          <div class="cell" data-index="2"></div>
+          <div class="cell" data-index="3"></div>
+          <div class="cell" data-index="4"></div>
+          <div class="cell" data-index="5"></div>
+          <div class="cell" data-index="6"></div>
+          <div class="cell" data-index="7"></div>
+          <div class="cell" data-index="8"></div>
+        </div>
+
+        <p id="status">Turno: X</p>
+        <div class="controls">
+          <button id="reset">Reiniciar</button>
+        </div>
+      </section>
     </main>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

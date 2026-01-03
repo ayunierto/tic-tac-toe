@@ -82,3 +82,33 @@ button {
 button:active {
   transform: translateY(1px);
 }
+
+/* Lobby form */
+#lobby {
+  max-width: 360px;
+  width: 100%;
+  background: var(--board);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #e6e6e6;
+}
+.lobby-row {
+  margin-bottom: 8px;
+}
+.lobby-row label {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: #444;
+}
+.lobby-row input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-top: 6px;
+}
+#participants {
+  margin-top: 8px;
+  font-size: 14px;
+}
